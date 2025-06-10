@@ -113,8 +113,12 @@
     <div class="right-panel">
       <div class="box image-box">
         <h3>图像区</h3>
-        <img id="preview" src="https://via.placeholder.com/320x240" alt="图像">
+        <video id="previewVideo" width="640" height="480" controls autoplay loop muted>
+          <source src="video.mp4" type="video/mp4">
+          您的浏览器不支持 video 标签。
+        </video>
       </div>
+      
       <div class="box chart-box">
         <h3>曲线区</h3>
         <div class="curve-selector">
