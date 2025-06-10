@@ -118,11 +118,12 @@
       <div class="box chart-box">
         <h3>曲线区</h3>
         <div class="curve-selector">
-          <label><input type="radio" name="curve" checked> 曲线1</label>
-          <label><input type="radio" name="curve"> 曲线2</label>
-          <label><input type="radio" name="curve"> 曲线3</label>
+          <label><input type="checkbox" name="curve" value="curve1" checked> 曲线1</label>
+          <label><input type="checkbox" name="curve" value="curve2"> 曲线2</label>
+          <label><input type="checkbox" name="curve" value="curve3"> 曲线3</label>
         </div>
         <canvas id="myChart"></canvas>
+        <button onclick="clearAllCurves()">清除所有曲线</button>
       </div>
     </div>
   </div>
@@ -137,8 +138,6 @@
       leds.forEach(led => led.classList.toggle('on', isOn));
     }
   
-    let recentNValues = [];
-  
     function calculateDelta() {
       const d1 = parseFloat(document.getElementById('d1').value);
       const d2 = parseFloat(document.getElementById('d2').value);
@@ -150,50 +149,6 @@
       }
     }
   
-    function calculate() {
-      const deltaTText = document.getElementById('delta').innerText; // Δt
-      const deltaDText = document.getElementById('delta_dist').innerText; // Δd
-
-      if (deltaTText !== '?' && deltaDText !== '?') {
-        const deltaT = parseFloat(deltaTText);
-        const deltaD = parseFloat(deltaDText);
-
-        if (deltaT !== 0) {
-          const n = deltaD / deltaT + 1;
-          document.getElementById('result').innerText = n.toFixed(4);
-          updateNHistory(n);
-
-          const d2 = parseFloat(document.getElementById('d2').value); // x轴仍用厚度 t2
-          if (!isNaN(d2)) addNewCurve(d2, n);
-        } else {
-          alert("Δt 不能为 0");
-        }
-      } else {
-        alert('请先计算 Δt 和 Δd');
-      }
-    }
-
-
-    let curveIndex = 1;
-
-    function addNewCurve(d2, n) {
-      const color = getRandomColor();
-      const label = `测量曲线 ${curveIndex++}`;
-
-      chart.data.datasets.push({
-        label: label,
-        data: [{ x: d2.toFixed(2), y: n.toFixed(4) }],
-        borderColor: color,
-        backgroundColor: color,
-        fill: false,
-        pointBackgroundColor: color,
-        pointBorderColor: color,
-        tension: 0.1
-      });
-
-      chart.update();
-    }
-    
     function calculateDistanceDelta() {
       const d1 = parseFloat(document.getElementById('d1_dist').value);
       const d2 = parseFloat(document.getElementById('d2_dist').value);
@@ -204,52 +159,142 @@
         alert('请输入有效的 d1 和 d2 距离值');
       }
     }
-
-    function getRandomColor() {
-      const colors = ['#2196f3', '#f44336', '#4caf50', '#ff9800', '#9c27b0', '#00bcd4'];
-      return colors[Math.floor(Math.random() * colors.length)];
-    }
-
-
-    function updateNHistory(n) {
-      recentNValues.unshift(n);
-      if (recentNValues.length > 3) recentNValues.pop();
-      document.getElementById('n1').innerText = recentNValues[0]?.toFixed(4) || '?';
-      document.getElementById('n2').innerText = recentNValues[1]?.toFixed(4) || '?';
-      document.getElementById('n3').innerText = recentNValues[2]?.toFixed(4) || '?';
   
-      if (recentNValues.length >= 2) {
-        const mean = recentNValues.reduce((a, b) => a + b, 0) / recentNValues.length;
-        const variance = recentNValues.reduce((sum, x) => sum + (x - mean) ** 2, 0) / (recentNValues.length - 1);
+    const curveDatasets = {
+      curve1: { label: "曲线1", data: [], borderColor: "#2196f3", tension: 0.4, hidden: false },
+      curve2: { label: "曲线2", data: [], borderColor: "#f44336", tension: 0.4, hidden: false },
+      curve3: { label: "曲线3", data: [], borderColor: "#4caf50", tension: 0.4, hidden: false }
+    };
+  
+    let recentNValues = {
+      curve1: [],
+      curve2: [],
+      curve3: []
+    };
+  
+    let currentCurve = "curve1";
+  
+    // 勾选事件绑定（checkbox）
+    document.querySelectorAll('input[name="curve"]').forEach((cb, index) => {
+      const curveKey = `curve${index + 1}`;
+      cb.value = curveKey;
+      cb.addEventListener('click', () => {
+        if (cb.checked) currentCurve = cb.value;
+      });
+      cb.addEventListener('change', updateVisibleCurves);
+    });
+  
+    function calculate() {
+      const deltaTText = document.getElementById('delta').innerText;
+      const deltaDText = document.getElementById('delta_dist').innerText;
+      if (deltaTText !== '?' && deltaDText !== '?') {
+        const deltaT = parseFloat(deltaTText);
+        const deltaD = parseFloat(deltaDText);
+        if (deltaT !== 0) {
+          const n = deltaD / deltaT + 1;
+          document.getElementById('result').innerText = n.toFixed(4);
+          const d2 = parseFloat(document.getElementById('d2').value);
+          if (!isNaN(d2)) addNewCurve(d2, n);
+        } else {
+          alert("Δt 不能为 0");
+        }
+      } else {
+        alert('请先计算 Δt 和 Δd');
+      }
+    }
+  
+    function addNewCurve(d2, n) {
+      const dataset = curveDatasets[currentCurve];
+      if (!dataset) return;
+  
+      if (dataset.data.length >= 3) dataset.data.shift();
+      dataset.data.push({ x: d2, y: n });
+  
+      const recent = recentNValues[currentCurve];
+      recent.unshift(n);
+      if (recent.length > 3) recent.pop();
+  
+      const nDisplayId = currentCurve === "curve1" ? "n1" : currentCurve === "curve2" ? "n2" : "n3";
+      document.getElementById(nDisplayId).innerText = n.toFixed(4);
+  
+      updateVisibleCurves();
+      updateUncertainty();
+    }
+  
+    function updateVisibleCurves() {
+      const selectedCurves = Array.from(document.querySelectorAll('input[name="curve"]'))
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+  
+      chart.data.datasets = selectedCurves.map(key => {
+        const base = curveDatasets[key];
+        return {
+          label: base.label,
+          data: base.data,
+          borderColor: base.borderColor,
+          backgroundColor: base.borderColor,
+          tension: base.tension,
+          fill: false,
+          pointBackgroundColor: base.borderColor,
+          pointBorderColor: base.borderColor
+        };
+      });
+  
+      chart.update();
+    }
+    
+
+    function updateUncertainty() {
+      const allValues = Object.values(recentNValues).flat().filter(n => !isNaN(n));
+      if (allValues.length >= 2) {
+        const mean = allValues.reduce((a, b) => a + b, 0) / allValues.length;
+        const variance = allValues.reduce((sum, x) => sum + (x - mean) ** 2, 0) / (allValues.length - 1);
         const stdDev = Math.sqrt(variance);
-        const uncertainty = stdDev / Math.sqrt(recentNValues.length);
+        const uncertainty = stdDev / Math.sqrt(allValues.length);
         document.getElementById('ua').innerText = uncertainty.toFixed(4);
       } else {
         document.getElementById('ua').innerText = '?';
       }
     }
   
-    // 图表绘制
+    function clearAllCurves() {
+      // 清空每条曲线的数据
+      Object.values(curveDatasets).forEach(ds => ds.data.splice(0, ds.data.length));
+
+      // 清空 recentNValues（用于不确定度和 n₁~n₃）
+      Object.keys(recentNValues).forEach(k => recentNValues[k] = []);
+
+      // 清空 n₁ n₂ n₃ 和 A类不确定度显示
+      document.getElementById("n1").innerText = "?";
+      document.getElementById("n2").innerText = "?";
+      document.getElementById("n3").innerText = "?";
+      document.getElementById("ua").innerText = "?";
+
+      // 重新更新图表
+      updateVisibleCurves();
+    }
+
+    // 初始化图表
     const ctx = document.getElementById('myChart').getContext('2d');
     const chart = new Chart(ctx, {
       type: 'line',
       data: {
-        datasets: [] // ← 正确，只保留一个 datasets
+        datasets: []
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { display: true } // ← 显示图例
-       },
-       scales: {
+          legend: { display: true }
+        },
+        scales: {
           x: {
-            type: 'linear', // ← 必须设置为 linear，否则不能使用 x: 厚度数据
+            type: 'linear',
             title: { display: true, text: '厚度 d2 (mm)', color: '#333' },
             ticks: { color: '#333' },
-           grid: { color: '#eee' }
+            grid: { color: '#eee' }
           },
-         y: {
+          y: {
             title: { display: true, text: '折射率 n', color: '#333' },
             beginAtZero: true,
             ticks: { color: '#333' },
@@ -258,16 +303,7 @@
         }
       }
     });
-
-  
-    function updateChart(d2, n) {
-      chart.data.labels.push(d2.toFixed(2));
-      chart.data.datasets[0].data.push(n);
-      if (chart.data.labels.length > 10) {
-        chart.data.labels.shift();
-        chart.data.datasets[0].data.shift();
-      }
-      chart.update();
-    }
   </script>
+  
+</body>
     
