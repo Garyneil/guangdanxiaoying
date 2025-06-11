@@ -215,3 +215,84 @@ input[type="radio"] {
     background-color: #00ff00;
    box-shadow: 0 0 10px #00ff00;
 }    
+
+/* ---- Splash 封面 ---- */
+.splash-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url("background picture.png") no-repeat center center fixed;
+    background-size: cover;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    transition: transform 1s ease, opacity 1s ease;
+  }
+  
+  .splash-screen.hide {
+    transform: translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+  
+  .splash-center {
+    position: relative;
+    text-align: center;
+  }
+  
+  .splash-title {
+    color: white;                       /* 字是白色 */
+    font-size: 28px;
+    font-weight: bold;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    background: transparent;           /* 不直接盖住圆环 */
+    padding: 6px 12px;
+    white-space: nowrap;
+    pointer-events: auto;
+    cursor: pointer;
+  
+    /* 用 box-shadow 来模拟遮罩遮环 */
+    box-shadow: 
+      -2px 0 0 2px white,
+       2px 0 0 2px white;
+  }
+  
+  .splash-circle {
+  width: 160px;
+  height: 160px;
+  border: 3px solid white;
+  border-radius: 50%;
+  position: relative;
+  z-index: 1;
+}
+
+.splash-mask {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 100%;
+  height: 38px; /* 根据你文字高度微调 */
+  background-color: rgba(255,255,255,0.9); /* 或和背景相同 */
+  z-index: 2;
+}
+
+  
+  .ring {
+    width: 240px;
+    height: 240px;
+    border: 4px solid white;
+    border-radius: 50%;
+    position: relative;
+    z-index: 1;
+  }
+  
+  
