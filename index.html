@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>光弹效应自动测试系统</title>
+  <title>光弹效应自动测试统</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="style.css"> 
 </head>
@@ -15,12 +15,13 @@
     </div>
   </div>
   
-  <h1>光弹效应自动测试系统</h1>
+  <h1>光 弹 效 应 自 动 测 试 系 统</h1>
 
   <div class="main">
     <!-- 左侧 -->
     <div class="left-panel">
       <!-- LED 模块 -->
+      <!--
       <div class="box">
         <h3>LED 指示灯状态</h3>
         <div>
@@ -31,20 +32,21 @@
           <button onclick="toggleLEDs()">变亮/变暗</button>
         </div>
       </div>
+      -->
   
       <!-- 厚度模块 -->
       <div class="box">
         <h3>厚度值（单位 mm）</h3>
 
       <!-- 静态说明 -->
-      <div style="margin-bottom: 6px;">薄膜厚度 t</div>
+      <div style="margin-bottom: 6px;">设薄膜厚度为 t</div>
 
       <!-- 输入区域 -->
       <div class="thickness-row">
         <label for="d1">拉伸前厚度 t1:</label>
-        <input type="number" id="d1" value="1.00" step="0.01">
+        <input type="number" id="d1" value="0.00" step="0.01">
         <label for="d2">拉伸后厚度 t2:</label>
-        <input type="number" id="d2" value="0.90" step="0.01">
+        <input type="number" id="d2" value="0.60" step="0.01">
       </div>
 
       <div class="result-box">厚度变化 Δt = <span id="delta">?</span></div>
@@ -56,11 +58,11 @@
       <h3>动镜移动距离（单位 mm）</h3>
 
       <!-- 静态说明 -->
-      <div style="margin-bottom: 6px;">动镜距离 d</div>
+      <div style="margin-bottom: 6px;">设动镜距离为 d</div>
 
       <!-- 输入区域 -->
       <div class="thickness-row">
-        <label for="d1_dist">移动前距离 d1:</label>
+        <label for="d1_dist">移动前距离 d1 = 放入薄膜前动镜刻度 X1:</label>
         <input type="number" id="d1_dist" value="5.00" step="0.01">
         <label for="d2_dist">移动后距离 d2:</label>
         <input type="number" id="d2_dist" value="5.50" step="0.01">
@@ -73,7 +75,7 @@
       <!-- 折射率模块 -->
       <div class="box">
         <h3>折射率</h3>
-        <div>折射率计算公式：n = Δd / Δt + 1</div><br>
+        <div>折射率计算公式：n = Δd / Δt + 1</div>
         <div class="result-box">折射率 n = <span id="result">?</span></div>
         <button onclick="calculate()">计算折射率 n</button>
       </div>
@@ -90,9 +92,13 @@
         </h3>
       
         <div class="result-box">
-          折射率 n₁ = <span id="n1">?</span>，
-          n₂ = <span id="n2">?</span>，
-          n₃ = <span id="n3">?</span><br>
+          <div class="n-values">
+            <div>n₁ = <span id="n1">?</span></div>
+            <div>n₂ = <span id="n2">?</span></div>
+            <div>n₃ = <span id="n3">?</span></div>
+            <div>n₄ = <span id="n4">?</span></div>
+            <div>n₅ = <span id="n5">?</span></div>
+          </div>          
           A类不确定度：<span id="ua">?</span>
         </div>
       </div>
@@ -107,21 +113,33 @@
             移动距离不确定度：S<sub>Δd</sub> = 0.005 / √3
           </span>
         </h3>
-      
+        厚度不确定度：Sₜ = 0.0023<br>
+        移动距离不确定度：S<sub>Δd</sub> = 0.0029
+      </div>
+
+
+      <!-- 总不确定度模块 -->
+      <div class="box">
+        <h3>总不确定度</h3>
+        U = √(A² + B²)<br>
         <div class="result-box">
-          厚度不确定度：Sₜ = 0.0023<br>
-          移动距离不确定度：S<sub>Δd</sub> = 0.0029
+          <span>总不确定度 U = <span id="utotal">?</span>
         </div>
       </div>
     </div>
       
-  
+
+
+
     <!-- 右侧 -->
     <div class="right-panel">
       <div class="box image-box">
-        <h3>图像区
-          <span class="tooltip image-tooltip">
-            <img src="standard.jpg" alt="标准图像" />
+        <h3>
+          <span class="h3-wrapper">
+            图像区
+            <span class="tooltip image-tooltip">
+              <img src="standard.jpg" alt="标准图像" />
+            </span>
           </span>
         </h3>
         <video id="previewVideo" width="1080" height="480" controls autoplay loop muted>
@@ -130,12 +148,15 @@
         </video>
       </div>
       
+      
       <div class="box chart-box">
         <h3>曲线区</h3>
         <div class="curve-selector">
           <label><input type="checkbox" name="curve" value="curve1" checked> 曲线1</label>
           <label><input type="checkbox" name="curve" value="curve2"> 曲线2</label>
           <label><input type="checkbox" name="curve" value="curve3"> 曲线3</label>
+          <label><input type="checkbox" name="curve" value="curve4"> 曲线4</label>
+          <label><input type="checkbox" name="curve" value="curve5"> 曲线5</label>
         </div>
         <canvas id="myChart"></canvas>
         <button onclick="clearAllCurves()">清除所有曲线</button>
@@ -178,13 +199,17 @@
     const curveDatasets = {
       curve1: { label: "曲线1", data: [], borderColor: "#2196f3", tension: 0.4, hidden: false },
       curve2: { label: "曲线2", data: [], borderColor: "#f44336", tension: 0.4, hidden: false },
-      curve3: { label: "曲线3", data: [], borderColor: "#4caf50", tension: 0.4, hidden: false }
-    };
+      curve3: { label: "曲线3", data: [], borderColor: "#4caf50", tension: 0.4, hidden: false },
+      curve4: { label: "曲线4", data: [], borderColor: "#ff9800", tension: 0.4, hidden: false },
+      curve5: { label: "曲线5", data: [], borderColor: "#9c27b0", tension: 0.4, hidden: false }
+    };;
   
     let recentNValues = {
       curve1: [],
       curve2: [],
-      curve3: []
+      curve3: [],
+      curve4: [],
+      curve5: []
     };
   
     let currentCurve = "curve1";
@@ -221,21 +246,28 @@
     function addNewCurve(d2, n) {
       const dataset = curveDatasets[currentCurve];
       if (!dataset) return;
-  
-      if (dataset.data.length >= 3) dataset.data.shift();
+
+      if (dataset.data.length >= 5) dataset.data.shift();
       dataset.data.push({ x: d2, y: n });
-  
+
       const recent = recentNValues[currentCurve];
       recent.unshift(n);
-      if (recent.length > 3) recent.pop();
-  
-      const nDisplayId = currentCurve === "curve1" ? "n1" : currentCurve === "curve2" ? "n2" : "n3";
-      document.getElementById(nDisplayId).innerText = n.toFixed(4);
-  
+      if (recent.length > 5) recent.pop();
+
+      const allValues = Object.values(recentNValues).flat().filter(n => !isNaN(n)).slice(0, 5);
+
+      // 显示 n₁ ~ n₅
+      for (let i = 0; i < 5; i++) {
+        const value = allValues[i];
+        const span = document.getElementById(`n${i + 1}`);
+        span.innerText = value !== undefined ? value.toFixed(4) : "?";
+      }
+
+
       updateVisibleCurves();
       updateUncertainty();
     }
-  
+
     function updateVisibleCurves() {
       const selectedCurves = Array.from(document.querySelectorAll('input[name="curve"]'))
         .filter(cb => cb.checked)
@@ -267,11 +299,20 @@
         const stdDev = Math.sqrt(variance);
         const uncertainty = stdDev / Math.sqrt(allValues.length);
         document.getElementById('ua').innerText = uncertainty.toFixed(4);
+
+        // ✨ 加上总不确定度计算
+        const b_thick = 0.004 / Math.sqrt(3);
+        const b_dist = 0.005 / Math.sqrt(3);
+        const b_combined = Math.sqrt(b_thick ** 2 + b_dist ** 2);
+        const total = Math.sqrt(uncertainty ** 2 + b_combined ** 2);
+        document.getElementById('utotal').innerText = total.toFixed(4);
+
       } else {
         document.getElementById('ua').innerText = '?';
+        document.getElementById('utotal').innerText = '?';
       }
     }
-  
+
     function clearAllCurves() {
       // 清空每条曲线的数据
       Object.values(curveDatasets).forEach(ds => ds.data.splice(0, ds.data.length));
@@ -279,11 +320,10 @@
       // 清空 recentNValues（用于不确定度和 n₁~n₃）
       Object.keys(recentNValues).forEach(k => recentNValues[k] = []);
 
-      // 清空 n₁ n₂ n₃ 和 A类不确定度显示
-      document.getElementById("n1").innerText = "?";
-      document.getElementById("n2").innerText = "?";
-      document.getElementById("n3").innerText = "?";
-      document.getElementById("ua").innerText = "?";
+      for (let i = 1; i <= 5; i++) {
+        document.getElementById(`n${i}`).innerText = "?";
+      }
+
 
       // 重新更新图表
       updateVisibleCurves();
@@ -335,6 +375,8 @@
       main.style.transform = 'translateY(80px)';
       main.style.transition = 'opacity 1s ease, transform 1s ease';
     });
+
+    setTimeout(enterSite, 3000);
 
   </script>
   
