@@ -21,7 +21,7 @@
     <!-- 左侧 -->
     <div class="left-panel">
       <!-- LED 模块 -->
-      <!--
+      
       <div class="box">
         <h3>LED 指示灯状态</h3>
         <div>
@@ -32,7 +32,7 @@
           <button onclick="toggleLEDs()">变亮/变暗</button>
         </div>
       </div>
-      -->
+      
   
       <!-- 厚度模块 -->
       <div class="box">
@@ -152,12 +152,21 @@
       <div class="box chart-box">
         <h3>曲线区</h3>
         <div class="curve-selector">
-          <label><input type="checkbox" name="curve" value="curve1" checked> 曲线1</label>
-          <label><input type="checkbox" name="curve" value="curve2"> 曲线2</label>
-          <label><input type="checkbox" name="curve" value="curve3"> 曲线3</label>
-          <label><input type="checkbox" name="curve" value="curve4"> 曲线4</label>
-          <label><input type="checkbox" name="curve" value="curve5"> 曲线5</label>
+          <div style="margin-bottom: 6px;"><strong>当前绘制（单选）</strong></div>
+          <label><input type="radio" name="drawCurve" value="curve1" checked> 曲线1</label>
+          <label><input type="radio" name="drawCurve" value="curve2"> 曲线2</label>
+          <label><input type="radio" name="drawCurve" value="curve3"> 曲线3</label>
+          <label><input type="radio" name="drawCurve" value="curve4"> 曲线4</label>
+          <label><input type="radio" name="drawCurve" value="curve5"> 曲线5</label>
+        
+          <div style="margin-top: 10px; margin-bottom: 6px;"><strong>当前展示（可多选）</strong></div>
+          <label><input type="checkbox" name="showCurve" value="curve1" checked> 曲线1</label>
+          <label><input type="checkbox" name="showCurve" value="curve2" checked> 曲线2</label>
+          <label><input type="checkbox" name="showCurve" value="curve3" checked> 曲线3</label>
+          <label><input type="checkbox" name="showCurve" value="curve4" checked> 曲线4</label>
+          <label><input type="checkbox" name="showCurve" value="curve5" checked> 曲线5</label>
         </div>
+        
         <canvas id="myChart"></canvas>
         <button onclick="clearAllCurves()">清除所有曲线</button>
       </div>
@@ -214,15 +223,20 @@
   
     let currentCurve = "curve1";
   
-    // 勾选事件绑定（checkbox）
-    document.querySelectorAll('input[name="curve"]').forEach((cb, index) => {
-      const curveKey = `curve${index + 1}`;
-      cb.value = curveKey;
-      cb.addEventListener('click', () => {
-        if (cb.checked) currentCurve = cb.value;
+    // 设置当前绘制曲线（radio）
+    document.querySelectorAll('input[name="drawCurve"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        if (radio.checked) {
+          currentCurve = radio.value;
+        }
       });
+    });
+
+    // 设置展示曲线（checkbox）
+    document.querySelectorAll('input[name="showCurve"]').forEach(cb => {
       cb.addEventListener('change', updateVisibleCurves);
     });
+
   
     function calculate() {
       const deltaTText = document.getElementById('delta').innerText;
@@ -269,10 +283,10 @@
     }
 
     function updateVisibleCurves() {
-      const selectedCurves = Array.from(document.querySelectorAll('input[name="curve"]'))
+      const selectedCurves = Array.from(document.querySelectorAll('input[name="showCurve"]'))
         .filter(cb => cb.checked)
         .map(cb => cb.value);
-  
+
       chart.data.datasets = selectedCurves.map(key => {
         const base = curveDatasets[key];
         return {
@@ -286,9 +300,10 @@
           pointBorderColor: base.borderColor
         };
       });
-  
+
       chart.update();
     }
+
     
 
     function updateUncertainty() {
@@ -376,7 +391,7 @@
       main.style.transition = 'opacity 1s ease, transform 1s ease';
     });
 
-    setTimeout(enterSite, 3000);
+    setTimeout(enterSite, 2000);
 
   </script>
   

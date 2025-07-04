@@ -209,8 +209,13 @@ canvas#myChart {
 
 .curve-selector {
     margin-bottom: 10px;
+    line-height: 2;
 }
-
+.curve-selector div {
+    margin-top: 6px;
+    font-weight: bold;
+  }
+  
 .curve-selector label {
     margin-right: 15px;
 }
