@@ -174,7 +174,8 @@
         <div class="camera-controls" style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
           <label for="cameraSelect">摄像头：</label>
           <select id="cameraSelect" style="min-width:220px;"></select>
-          <button onclick="startSelectedCamera()">开启</button>
+          <button onclick="initCameraFlow()">开启</button>
+
           <button onclick="stopCamera()">关闭</button>
           <span id="camStatus" style="color:#2b4f6f;"></span>
         </div>
@@ -500,7 +501,28 @@
         alert('开启摄像头失败：' + err.message + '\n请确认已授权并连接 Newmine 4K（需 HTTPS 或 localhost）。');
       }
     }
-  
+
+    // 用户点击“开启”后：先拿权限 → 再列设备（可见Newmine 4K名字）→ 再按下拉值启动
+async function initCameraFlow() {
+  try {
+    // 第一步：拿一次权限，确保 enumerateDevices 能拿到 label
+    const tmp = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    tmp.getTracks().forEach(t => t.stop());  // 先关掉临时流
+
+    // 第二步：列出摄像头并优先选 Newmine 4K
+    await listCameras();
+
+    // 第三步：根据下拉框实际值启动
+    await startSelectedCamera();
+
+    // 显示状态
+    const st = document.getElementById('camStatus');
+    if (st) st.textContent = '摄像头已开启';
+  } catch (e) {
+    alert('无法访问摄像头：' + e.message + '\n请确认在 HTTPS（或 localhost）且已授权。');
+  }
+}
+
     function stopCamera() {
       if (camStream) {
         camStream.getTracks().forEach(t => t.stop());
@@ -512,13 +534,7 @@
       if (st) st.textContent = '摄像头已关闭';
     }
   
-    // 进入主页后自动列设备并默认选 Newmine 4K
-    const __enterSite = enterSite;
-    enterSite = function () {
-      __enterSite();
-      setTimeout(() => listCameras(), 300);
-    };
-  
+
     // 热插拔监听
     if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
       navigator.mediaDevices.addEventListener('devicechange', () => listCameras());
@@ -528,3 +544,4 @@
   
 </body>
     
+
