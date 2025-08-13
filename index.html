@@ -34,31 +34,52 @@
       </div>
       
   
-      <!-- 厚度模块 -->
-      <div class="box">
-        <h3>厚度值（单位 mm）</h3>
+    <!-- 厚度模块 -->
+    <div class="box">
+      <h3>厚度值（单位 mm）</h3>
 
-      <!-- 静态说明 -->
       <div style="margin-bottom: 6px;">设薄膜厚度为 t</div>
 
-      <!-- 输入区域 -->
+      <!-- 拉伸前三次 -->
       <div class="thickness-row">
-        <label for="d1">拉伸前厚度 t1:</label>
-        <input type="number" id="d1" value="0.00" step="0.01">
-        <label for="d2">拉伸后厚度 t2:</label>
-        <input type="number" id="d2" value="0.60" step="0.01">
+        <label>拉伸前厚度 t1（取均值）</label>
+      </div>
+      <div class="thickness-row">
+        <label>t1₁:</label>
+        <input type="number" id="t1_1" value="0.60" step="0.01">
+        <label>t1₂:</label>
+        <input type="number" id="t1_2" value="0.60" step="0.01">
+        <label>t1₃:</label>
+        <input type="number" id="t1_3" value="0.60" step="0.01">
       </div>
 
-      <div class="result-box">厚度变化 Δt = <span id="delta">?</span></div>
-        <button onclick="calculateDelta()">计算厚度变化 Δt</button>
+      <!-- 拉伸后三次 -->
+      <div class="thickness-row">
+        <label>拉伸后厚度 t2（取均值）</label>
+      </div>
+      <div class="thickness-row">
+        <label>t2₁:</label>
+        <input type="number" id="t2_1" value="0.60" step="0.01">
+        <label>t2₂:</label>
+        <input type="number" id="t2_2" value="0.60" step="0.01">
+        <label>t2₃:</label>
+        <input type="number" id="t2_3" value="0.60" step="0.01">
+      </div>
+
+      <div class="result-box">
+        t1均值 = <span id="t1_avg">?</span>，t2均值 = <span id="t2_avg">?</span><br>
+        厚度变化 Δt = <span id="delta">?</span>
+      </div>
+      <button onclick="calculateDelta()">计算厚度变化 Δt</button>
     </div>
+
 
     <!-- 动镜移动距离模块 -->
     <div class="box">
       <h3>动镜移动距离（单位 mm）</h3>
 
       <!-- 静态说明 -->
-      <div style="margin-bottom: 6px;">设动镜距离为 d</div>
+      <div style="margin-bottom: 6px;">设动镜距离 d</div>
 
       <!-- 输入区域 -->
       <div class="thickness-row">
@@ -99,12 +120,12 @@
             <div>n₄ = <span id="n4">?</span></div>
             <div>n₅ = <span id="n5">?</span></div>
           </div>          
-          A类不确定度：<span id="ua">?</span>
+          A类不确定度 = <span id="ua">?</span>
         </div>
       </div>
       
   
-      <div class="box">
+      <div class="box b-uncertainty">
         <h3>
           B类不确定度
           <span class="tooltip">
@@ -116,6 +137,7 @@
         厚度不确定度：Sₜ = 0.0023<br>
         移动距离不确定度：S<sub>Δd</sub> = 0.0029
       </div>
+      
 
 
       <!-- 总不确定度模块 -->
@@ -142,11 +164,22 @@
             </span>
           </span>
         </h3>
-        <video id="previewVideo" width="1080" height="480" controls autoplay loop muted>
+         <!-- <video id="previewVideo" width="1080" height="480" controls autoplay loop muted>
           <source src="video.mp4" type="video/mp4">
           您的浏览器不支持 video 标签。
-        </video>
-      </div>
+        </video>  -->
+        <!-- 实时摄像头画面 -->
+        <video id="camera" width="1080" height="480" autoplay playsinline muted></video>
+
+        <div class="camera-controls" style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <label for="cameraSelect">摄像头：</label>
+          <select id="cameraSelect" style="min-width:220px;"></select>
+          <button onclick="startSelectedCamera()">开启</button>
+          <button onclick="stopCamera()">关闭</button>
+          <span id="camStatus" style="color:#2b4f6f;"></span>
+        </div>
+
+
       
       
       <div class="box chart-box">
@@ -175,25 +208,47 @@
 
 
   <script>
+    // ===== LED =====
     const leds = [1, 2, 3, 4].map(i => document.getElementById('led' + i));
     let isOn = false;
-  
     function toggleLEDs() {
       isOn = !isOn;
       leds.forEach(led => led.classList.toggle('on', isOn));
     }
   
-    function calculateDelta() {
-      const d1 = parseFloat(document.getElementById('d1').value);
-      const d2 = parseFloat(document.getElementById('d2').value);
-      if (!isNaN(d1) && !isNaN(d2)) {
-        const delta = Math.abs(d2 - d1);
-        document.getElementById('delta').innerText = delta.toFixed(4);
-      } else {
-        alert('请输入有效的 d1 和 d2 值');
-      }
+    // ===== 厚度：读取/均值工具 =====
+    function readNum(id) {
+      const v = parseFloat(document.getElementById(id)?.value);
+      return Number.isFinite(v) ? v : null;
+    }
+    function mean(arr) {
+      if (!arr || arr.length === 0 || arr.some(v => v === null)) return null;
+      return arr.reduce((a, b) => a + b, 0) / arr.length;
+    }
+    function getAvgT1() {
+      return mean([readNum('t1_1'), readNum('t1_2'), readNum('t1_3')]);
+    }
+    function getAvgT2() {
+      return mean([readNum('t2_1'), readNum('t2_2'), readNum('t2_3')]);
     }
   
+    // ===== Δt：使用 t1、t2 的均值 =====
+    function calculateDelta() {
+      const t1 = getAvgT1();
+      const t2 = getAvgT2();
+      if (t1 === null || t2 === null) {
+        alert('请输入完整的 t1/t2 三次测量值');
+        return;
+      }
+      const delta = Math.abs(t2 - t1);
+      const t1Span = document.getElementById('t1_avg');
+      const t2Span = document.getElementById('t2_avg');
+      if (t1Span) t1Span.innerText = t1.toFixed(4);
+      if (t2Span) t2Span.innerText = t2.toFixed(4);
+      document.getElementById('delta').innerText = delta.toFixed(4);
+    }
+  
+    // ===== Δd：动镜距离不变 =====
     function calculateDistanceDelta() {
       const d1 = parseFloat(document.getElementById('d1_dist').value);
       const d2 = parseFloat(document.getElementById('d2_dist').value);
@@ -205,88 +260,80 @@
       }
     }
   
+    // ===== 曲线区 =====
     const curveDatasets = {
       curve1: { label: "曲线1", data: [], borderColor: "#2196f3", tension: 0.4, hidden: false },
       curve2: { label: "曲线2", data: [], borderColor: "#f44336", tension: 0.4, hidden: false },
       curve3: { label: "曲线3", data: [], borderColor: "#4caf50", tension: 0.4, hidden: false },
       curve4: { label: "曲线4", data: [], borderColor: "#ff9800", tension: 0.4, hidden: false },
       curve5: { label: "曲线5", data: [], borderColor: "#9c27b0", tension: 0.4, hidden: false }
-    };;
-  
-    let recentNValues = {
-      curve1: [],
-      curve2: [],
-      curve3: [],
-      curve4: [],
-      curve5: []
     };
   
+    let recentNValues = { curve1: [], curve2: [], curve3: [], curve4: [], curve5: [] };
     let currentCurve = "curve1";
   
-    // 设置当前绘制曲线（radio）
+    // 当前绘制（radio）
     document.querySelectorAll('input[name="drawCurve"]').forEach(radio => {
       radio.addEventListener('change', () => {
-        if (radio.checked) {
-          currentCurve = radio.value;
-        }
+        if (radio.checked) currentCurve = radio.value;
       });
     });
-
-    // 设置展示曲线（checkbox）
+  
+    // 当前展示（checkbox）
     document.querySelectorAll('input[name="showCurve"]').forEach(cb => {
       cb.addEventListener('change', updateVisibleCurves);
     });
-
   
+    // 折射率 n 计算：用 Δd/Δt + 1，并将 t2 的均值作为 x 轴点
     function calculate() {
       const deltaTText = document.getElementById('delta').innerText;
       const deltaDText = document.getElementById('delta_dist').innerText;
       if (deltaTText !== '?' && deltaDText !== '?') {
         const deltaT = parseFloat(deltaTText);
         const deltaD = parseFloat(deltaDText);
-        if (deltaT !== 0) {
-          const n = deltaD / deltaT + 1;
-          document.getElementById('result').innerText = n.toFixed(4);
-          const d2 = parseFloat(document.getElementById('d2').value);
-          if (!isNaN(d2)) addNewCurve(d2, n);
-        } else {
+        if (deltaT === 0) {
           alert("Δt 不能为 0");
+          return;
         }
+        const n = deltaD / deltaT + 1;
+        document.getElementById('result').innerText = n.toFixed(4);
+  
+        const t2avg = getAvgT2();
+        if (Number.isFinite(t2avg)) addNewCurve(t2avg, n);  // x 用 t2 的均值
       } else {
         alert('请先计算 Δt 和 Δd');
       }
     }
   
-    function addNewCurve(d2, n) {
+    function addNewCurve(x_thickness, n) {
       const dataset = curveDatasets[currentCurve];
       if (!dataset) return;
-
+  
       if (dataset.data.length >= 5) dataset.data.shift();
-      dataset.data.push({ x: d2, y: n });
-
+      dataset.data.push({ x: x_thickness, y: n });
+  
       const recent = recentNValues[currentCurve];
       recent.unshift(n);
       if (recent.length > 5) recent.pop();
-
-      const allValues = Object.values(recentNValues).flat().filter(n => !isNaN(n)).slice(0, 5);
-
+  
+      const allValues = Object.values(recentNValues).flat().filter(v => !isNaN(v)).slice(0, 5);
+  
       // 显示 n₁ ~ n₅
       for (let i = 0; i < 5; i++) {
         const value = allValues[i];
         const span = document.getElementById(`n${i + 1}`);
-        span.innerText = value !== undefined ? value.toFixed(4) : "?";
+        if (span) span.innerText = value !== undefined ? value.toFixed(4) : "?";
       }
-
-
+  
       updateVisibleCurves();
       updateUncertainty();
     }
-
+  
     function updateVisibleCurves() {
       const selectedCurves = Array.from(document.querySelectorAll('input[name="showCurve"]'))
         .filter(cb => cb.checked)
         .map(cb => cb.value);
-
+  
       chart.data.datasets = selectedCurves.map(key => {
         const base = curveDatasets[key];
         return {
@@ -300,67 +347,58 @@
           pointBorderColor: base.borderColor
         };
       });
-
+  
       chart.update();
     }
-
-    
-
+  
     function updateUncertainty() {
       const allValues = Object.values(recentNValues).flat().filter(n => !isNaN(n));
       if (allValues.length >= 2) {
-        const mean = allValues.reduce((a, b) => a + b, 0) / allValues.length;
-        const variance = allValues.reduce((sum, x) => sum + (x - mean) ** 2, 0) / (allValues.length - 1);
+        const meanVal = allValues.reduce((a, b) => a + b, 0) / allValues.length;
+        const variance = allValues.reduce((sum, x) => sum + (x - meanVal) ** 2, 0) / (allValues.length - 1);
         const stdDev = Math.sqrt(variance);
         const uncertainty = stdDev / Math.sqrt(allValues.length);
-        document.getElementById('ua').innerText = uncertainty.toFixed(4);
-
-        // ✨ 加上总不确定度计算
+        const uaSpan = document.getElementById('ua');
+        if (uaSpan) uaSpan.innerText = uncertainty.toFixed(4);
+  
+        // 总不确定度（A & B 合成）
         const b_thick = 0.004 / Math.sqrt(3);
-        const b_dist = 0.005 / Math.sqrt(3);
+        const b_dist  = 0.005 / Math.sqrt(3);
         const b_combined = Math.sqrt(b_thick ** 2 + b_dist ** 2);
         const total = Math.sqrt(uncertainty ** 2 + b_combined ** 2);
-        document.getElementById('utotal').innerText = total.toFixed(4);
-
+        const utSpan = document.getElementById('utotal');
+        if (utSpan) utSpan.innerText = total.toFixed(4);
       } else {
-        document.getElementById('ua').innerText = '?';
-        document.getElementById('utotal').innerText = '?';
+        const uaSpan = document.getElementById('ua');
+        const utSpan = document.getElementById('utotal');
+        if (uaSpan) uaSpan.innerText = '?';
+        if (utSpan) utSpan.innerText = '?';
       }
     }
-
+  
     function clearAllCurves() {
-      // 清空每条曲线的数据
       Object.values(curveDatasets).forEach(ds => ds.data.splice(0, ds.data.length));
-
-      // 清空 recentNValues（用于不确定度和 n₁~n₃）
-      Object.keys(recentNValues).forEach(k => recentNValues[k] = []);
-
+      Object.keys(recentNValues).forEach(k => (recentNValues[k] = []));
       for (let i = 1; i <= 5; i++) {
-        document.getElementById(`n${i}`).innerText = "?";
+        const span = document.getElementById(`n${i}`);
+        if (span) span.innerText = "?";
       }
-
-
-      // 重新更新图表
       updateVisibleCurves();
     }
-
-    // 初始化图表
+  
+    // ===== 初始化图表（x 轴标题更新为 t2_avg）=====
     const ctx = document.getElementById('myChart').getContext('2d');
     const chart = new Chart(ctx, {
       type: 'line',
-      data: {
-        datasets: []
-      },
+      data: { datasets: [] },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: {
-          legend: { display: true }
-        },
+        plugins: { legend: { display: true } },
         scales: {
           x: {
             type: 'linear',
-            title: { display: true, text: '厚度 d2 (mm)', color: '#333' },
+            title: { display: true, text: '厚度 t2_avg (mm)', color: '#333' },
             ticks: { color: '#333' },
             grid: { color: '#eee' }
           },
@@ -373,27 +411,120 @@
         }
       }
     });
-
+  
+    // ===== 进场动画 =====
     function enterSite() {
       const splash = document.getElementById('splash');
-      splash.classList.add('hide');
-
-      // 延迟显示主内容
-      document.querySelector('.main').style.opacity = 1;
-      document.querySelector('.main').style.transform = 'translateY(0)';
+      if (splash) splash.classList.add('hide');
+      const mainEl = document.querySelector('.main');
+      if (mainEl) {
+        mainEl.style.opacity = 1;
+        mainEl.style.transform = 'translateY(0)';
+      }
     }
-
-    // 页面加载时隐藏主内容
     window.addEventListener('load', () => {
       const main = document.querySelector('.main');
-      main.style.opacity = 0;
-      main.style.transform = 'translateY(80px)';
-      main.style.transition = 'opacity 1s ease, transform 1s ease';
+      if (main) {
+        main.style.opacity = 0;
+        main.style.transform = 'translateY(80px)';
+        main.style.transition = 'opacity 1s ease, transform 1s ease';
+      }
     });
-
     setTimeout(enterSite, 2000);
-
+  
+    // ===== 摄像头设备选择（优先 Newmine 4K）=====
+    let camStream = null;
+    const PREF_KEY = 'preferredCameraId';
+  
+    async function listCameras() {
+      try {
+        // 先获取授权，才能拿到设备 label
+        await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+          .then(s => s.getTracks().forEach(t => t.stop()))
+          .catch(() => {});
+  
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videos = devices.filter(d => d.kind === 'videoinput');
+  
+        const sel = document.getElementById('cameraSelect');
+        if (!sel) return;
+        sel.innerHTML = '';
+        videos.forEach(d => {
+          const opt = document.createElement('option');
+          opt.value = d.deviceId;
+          opt.textContent = d.label || `Camera ${sel.length + 1}`;
+          sel.appendChild(opt);
+        });
+  
+        const newmine = videos.find(d => /newmine.*4k/i.test((d.label || '')));
+        const savedId = localStorage.getItem(PREF_KEY);
+  
+        if (newmine) {
+          sel.value = newmine.deviceId;
+        } else if (savedId && videos.some(v => v.deviceId === savedId)) {
+          sel.value = savedId;
+        } else if (videos[0]) {
+          sel.value = videos[0].deviceId;
+        }
+  
+        startSelectedCamera();
+      } catch (err) {
+        console.error('列出摄像头失败：', err);
+        const st = document.getElementById('camStatus');
+        if (st) st.textContent = '无法列出摄像头：' + err.message;
+      }
+    }
+  
+    async function startSelectedCamera() {
+      stopCamera();
+      const sel = document.getElementById('cameraSelect');
+      const deviceId = sel?.value;
+      if (!deviceId) return;
+      localStorage.setItem(PREF_KEY, deviceId);
+      try {
+        camStream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: { exact: deviceId }, width: { ideal: 3840 }, height: { ideal: 2160 } },
+          audio: false
+        });
+        const v = document.getElementById('camera');
+        if (v) {
+          v.srcObject = camStream;
+          await v.play();
+        }
+        const st = document.getElementById('camStatus');
+        if (st) st.textContent = '摄像头已开启';
+      } catch (err) {
+        console.error('启动摄像头失败：', err);
+        const st = document.getElementById('camStatus');
+        if (st) st.textContent = '开启失败：' + err.message;
+        alert('开启摄像头失败：' + err.message + '\n请确认已授权并连接 Newmine 4K（需 HTTPS 或 localhost）。');
+      }
+    }
+  
+    function stopCamera() {
+      if (camStream) {
+        camStream.getTracks().forEach(t => t.stop());
+        camStream = null;
+      }
+      const v = document.getElementById('camera');
+      if (v) v.srcObject = null;
+      const st = document.getElementById('camStatus');
+      if (st) st.textContent = '摄像头已关闭';
+    }
+  
+    // 进入主页后自动列设备并默认选 Newmine 4K
+    const __enterSite = enterSite;
+    enterSite = function () {
+      __enterSite();
+      setTimeout(() => listCameras(), 300);
+    };
+  
+    // 热插拔监听
+    if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+      navigator.mediaDevices.addEventListener('devicechange', () => listCameras());
+    }
   </script>
+  
   
 </body>
     

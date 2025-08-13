@@ -128,6 +128,7 @@ input[type="number"] {
     align-items: center;
     flex-wrap: wrap;
     gap: 10px;
+    margin-bottom: 8px;
 }
 
 button {
@@ -316,3 +317,37 @@ input[type="radio"] {
     position: relative;
     z-index: 1;
   }
+
+.box.b-uncertainty {
+    line-height: 1.6; /* 调整行间距 */
+}
+#camera {
+    width: 100%;
+    height: 480px;
+    object-fit: cover;   /* 画面充满不变形 */
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    background: #000;
+  }
+  /* 确保图像区在曲线区之上 */
+.image-box {
+    position: relative;
+    z-index: 20;
+    overflow: visible;      /* 允许下拉菜单溢出显示 */
+  }
+  
+  /* 直接把选择器这行顶到最上层 */
+  .camera-controls {
+    position: relative;
+    z-index: 999;
+  }
+  
+  /* 曲线区层级更低，避免遮挡 */
+  .chart-box {
+    position: relative;
+    z-index: 1;
+  }
+  
+  /* （可选）给图像区底部留点空间，避免视觉拥挤 */
+  .image-box { padding-bottom: 8px; }
+  
